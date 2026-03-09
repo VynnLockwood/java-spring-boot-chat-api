@@ -1,0 +1,33 @@
+# docker-compose.yml allows you to orchestrate multiple containers together.
+# In this case, we orchestrate the Nginx web server and the Spring Boot API.
+version: '3.8'
+
+services:
+  # 1. The Spring Boot backend service
+  api:
+    # Build the image using the Dockerfile in the current directory (".")
+    build: .
+    # Note: We purposely DO NOT map ports to the host machine here (like ports: 8080:8080).
+    # We want all requests to go strictly through Nginx first. The containers can still talk to each other.
+    expose:
+      - "8080"
+    # Gives the container a recognizable name
+    container_name: spring-boot-api
+    # Restarts automatically unless explicitly completely stopped
+    restart: unless-stopped
+
+  # 2. The Nginx reverse proxy service
+  nginx:
+    # Use the official Nginx lightweight alpine image
+    image: nginx:alpine
+    # Map port 80 (standard HTTP port) on your local machine to port 80 on the container
+    ports:
+      - "80:80"
+    # Mount our local nginx.conf into the container so it knows our routing rules
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    container_name: nginx-proxy
+    # Ensure Nginx waits for the API to start up first before it starts
+    depends_on:
+      - api
+    restart: unless-stopped
