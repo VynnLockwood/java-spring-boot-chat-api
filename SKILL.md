@@ -57,23 +57,37 @@ Docker packages your application and its required environment (like the Java run
 
 - **Multi-stage Builds**: The provided `Dockerfile` first builds your app using Maven (Stage 1), and then copies *only* the compiled `.jar` file into a smaller Java runtime image (Stage 2). This ensures your final Docker image is lightweight and secure (no source code included).
 
-## 3. Nginx as a Reverse Proxy
+## 3. The Frontend (Vite + React)
 
-Nginx sits between the internet and your Spring Boot application. We've set up an `nginx/nginx.conf` file in your project.
-- **Security Checkpoint**: It hides what port your Spring Boot app is actually running on inside the Docker network.
-- **Gateway**: If you ever add a frontend (like React), Nginx can route traffic to the frontend for UI, and to the Spring Boot app for the `/api` route.
+We've added a modern Vite-based React frontend to this application. Vite is an incredibly fast build tool that instantly starts a development server and bundles your React code for production.
+- During development, you can run `npm run dev` in the `frontend` directory.
+- For production, Docker builds the static React files (`dist` folder) and serves them using a lightweight internal Nginx container.
 
-## 4. Docker Compose Setup
+## 4. Nginx as a Reverse Proxy
 
-Docker Compose lets us define and run multi-container applications easily. The `docker-compose.yml` file links:
-1. **The Spring Boot App**: Built automatically from the `Dockerfile`.
-2. **Nginx**: Running on port `80`, routing traffic into the Spring Boot App.
+Nginx (running on port `23000`) acts as the single entry point (the "front door") to your entire application.
+- **Routing**: If a user visits `/`, Nginx routes the traffic to the Vite React Frontend. If they visit `/api/`, Nginx routes the traffic to the Spring Boot App. Portainer is accessed via `/portainer/`.
+- **Security**: It hides what ports your actual components run on, exposing only an organized front to the user.
 
-**To run the project locally:**
+## 5. Docker Compose & Portainer
+
+Docker Compose lets us define and run all our multi-container applications easily. Our `docker-compose.yml` links:
+1. **The Spring Boot API**
+2. **The React Frontend**
+3. **The Nginx Reverse Proxy** (routing traffic securely)
+4. **Portainer** (A powerful web-based UI to manage your Docker containers natively)
+
+### Accessing Your Application
+
+After you run:
 ```bash
-# This builds the images and starts the containers in the background.
 docker-compose up --build -d
 ```
+
+You can access your whole environment:
+- **Your Web Application**: `http://localhost:23000` (Served by Nginx, showing the Vite React App)
+- **Your API Endpoints**: `http://localhost:23000/api/...` (Routed behind the scenes to Spring Boot)
+- **Portainer Dashboard**: `http://localhost:23000/portainer/` (Manage your containers visually!)
 
 ## Extra Beginner Best Practices
 - **Log thoughtfully**: Use SLF4J (built into Spring Boot) for logging via `log.info()` or `log.error()`. Don't use `System.out.println()`.

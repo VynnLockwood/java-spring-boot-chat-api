@@ -16,18 +16,39 @@ services:
     # Restarts automatically unless explicitly completely stopped
     restart: unless-stopped
 
-  # 2. The Nginx reverse proxy service
+  # 2. The React Frontend service
+  frontend:
+    build: ./frontend
+    expose:
+      - "80"
+    container_name: react-frontend
+    restart: unless-stopped
+
+  # 3. The Nginx reverse proxy service
   nginx:
     # Use the official Nginx lightweight alpine image
     image: nginx:alpine
-    # Map port 80 (standard HTTP port) on your local machine to port 80 on the container
+    # Map port 23000 on your local machine to port 23000 on the container
     ports:
-      - "80:80"
+      - "23000:23000"
     # Mount our local nginx.conf into the container so it knows our routing rules
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     container_name: nginx-proxy
-    # Ensure Nginx waits for the API to start up first before it starts
+    # Ensure Nginx waits for the API and Frontend to start up first before it starts
     depends_on:
       - api
+      - frontend
     restart: unless-stopped
+
+  # 4. Portainer for easy Docker management
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /Users/nolanrobinson/.docker/run/docker.sock:/var/run/docker.sock:ro
+      - ./portainer_data:/data
