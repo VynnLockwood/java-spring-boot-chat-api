@@ -13,6 +13,13 @@ services:
       - "8080"
     # Gives the container a recognizable name
     container_name: spring-boot-api
+
+    #Bind mount the target directory to the container
+    volumes:
+      - .:/app
+    
+    command: ./mvnw spring-boot:run
+
     # Restarts automatically unless explicitly completely stopped
     restart: unless-stopped
 
@@ -22,6 +29,10 @@ services:
     expose:
       - "80"
     container_name: react-frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev
     restart: unless-stopped
 
   # 3. The Nginx reverse proxy service
@@ -35,6 +46,8 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     container_name: nginx-proxy
+
+  
     # Ensure Nginx waits for the API and Frontend to start up first before it starts
     depends_on:
       - api
